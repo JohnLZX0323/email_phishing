@@ -22,7 +22,9 @@ def load_and_train_models():
         df = pd.read_csv('StealthPhisher2025.csv')
 
     # 2. Select features
-    features_only = df.drop(columns=['Label', 'url']) if 'url' in df.columns else df.drop(columns=['Label'])
+    ui_features = ['LengthOfURL', 'CntFilesJS', 'CharacterComplexity']
+    features_only = df[ui_features] 
+    
     numerical_cols = features_only.select_dtypes(include=['int64', 'float64']).columns.tolist()
     categorical_cols = features_only.select_dtypes(include=['object', 'category']).columns.tolist()
     
@@ -34,7 +36,7 @@ def load_and_train_models():
     X_processed = preprocessor.fit_transform(features_only)
 
     # 4. Isolation Forest  
-    iso_forest = IsolationForest(contamination=0.1, random_state=42)
+    iso_forest = IsolationForest(contamination=0.3, random_state=42)
     iso_forest.fit(X_processed)
 
     # 5. DBSCAN + KNN Proxy (To allow DBSCAN to handle new inputs)
