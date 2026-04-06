@@ -33,12 +33,12 @@ def load_and_train_models():
     ])
     X_processed = preprocessor.fit_transform(features_only)
 
-    # 4. Isolation Forest 
-    iso_forest = IsolationForest(contamination=0.2, random_state=42)
+    # 4. Isolation Forest  
+    iso_forest = IsolationForest(contamination=0.1, random_state=42)
     iso_forest.fit(X_processed)
 
     # 5. DBSCAN + KNN Proxy (To allow DBSCAN to handle new inputs)
-    dbscan = DBSCAN(eps=8.5, min_samples=64)
+    dbscan = DBSCAN(eps=8.5, min_samples=64 )
     clusters = dbscan.fit_predict(X_processed)
     
     knn_proxy = KNeighborsClassifier(n_neighbors=5)
