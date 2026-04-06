@@ -12,7 +12,7 @@ st.set_page_config(page_title="AI Phishing Detector", layout="centered")
 @st.cache_resource
 def load_and_train_model():
     # 1. Load your dataset (ensure StealthPhisher2025.csv is in the same folder)
-    df = pd.read_csv('StealthPhisher_minimal.csv')
+    df = pd.read_csv('StealthPhisher_mini.csv')
     generated_df = df.sample(n=5000, random_state=42)
     
     # 2. Data Preparation
