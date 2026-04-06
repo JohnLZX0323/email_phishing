@@ -13,17 +13,17 @@ st.set_page_config(page_title="Dual-Model Phishing Lab", layout="wide")
 
 @st.cache_resource
 def load_and_train_models():
-    # 1. Load your 5,000 row dataset
-    # Ensure this filename matches exactly what you uploaded to GitHub!
+    # 1. Load your dataset
     try:
         df = pd.read_csv('StealthPhisher_mini.csv') 
     except FileNotFoundError:
-        # Fallback to original name if you didn't rename it
         df = pd.read_csv('StealthPhisher2025.csv')
 
-    # 2. Select features
+    # 2. Select ONLY the features controlled by the UI
     ui_features = ['LengthOfURL', 'CntFilesJS', 'CharacterComplexity']
-    features_only = df[ui_features] 
+    # Ensure the columns exist in the dataframe to avoid errors
+    available_features = [f for f in ui_features if f in df.columns]
+    features_only = df[available_features]
     
     numerical_cols = features_only.select_dtypes(include=['int64', 'float64']).columns.tolist()
     categorical_cols = features_only.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -35,12 +35,13 @@ def load_and_train_models():
     ])
     X_processed = preprocessor.fit_transform(features_only)
 
-    # 4. Isolation Forest  
-    iso_forest = IsolationForest(contamination=0.25, random_state=42)
+    # 4. Isolation Forest (Tuned contamination to 15% for better sensitivity)
+    iso_forest = IsolationForest(contamination=0.15, random_state=42)
     iso_forest.fit(X_processed)
 
-    # 5. DBSCAN + KNN Proxy (To allow DBSCAN to handle new inputs)
-    dbscan = DBSCAN(eps=10, min_samples=128 )
+    # 5. DBSCAN + KNN Proxy 
+    # FIX: Drastically lowered 'eps' from 8.5 to 0.8 so it forms tighter clusters
+    dbscan = DBSCAN(eps=0.8, min_samples=20)
     clusters = dbscan.fit_predict(X_processed)
     
     knn_proxy = KNeighborsClassifier(n_neighbors=5)
@@ -48,7 +49,13 @@ def load_and_train_models():
     
     # 6. Create Baseline for UI Input
     baseline = features_only.iloc[[0]].copy()
+    if len(numerical_cols) > 0:
+        baseline[numerical_cols] = features_only[numerical_cols].median().values
+    if len(categorical_cols) > 0:
+        baseline[categorical_cols] = features_only[categorical_cols].mode().iloc[0].values
     
+    return preprocessor, iso_forest, knn_proxy, baseline
+
     # Only calculate median if there are numerical columns
     if len(numerical_cols) > 0:
         baseline[numerical_cols] = features_only[numerical_cols].median().values
